@@ -1,0 +1,17 @@
+on:
+    push:
+      branches: [ main ]
+
+
+jobs:
+    dag-generator:
+        runs-on: ubuntu-latest 
+
+        steps:
+        - name: Get branch name (head) of the last merged PR
+          id: branch-name
+          if: github.event_name != 'pull_request' # do not push DAG on pull request
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y jq
+            echo "branch=$(gh pr list -s merged -L 1 --json headRefName | jq '.[0].headRefName')" | sed 's/"//g' >> "$GITHUB_OUTPUT"
