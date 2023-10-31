@@ -36,7 +36,7 @@ jobs:
         
         - name: Get PR Branch Name
           id: pr_branch_name
-          run: echo "PR_BRANCH_NAME=${{ github.head_ref }}" >> $GITHUB_ENV
+          run: echo "PR_BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
     
         - name: Print PR Branch Name
           run: echo "PR Branch Name is $PR_BRANCH_NAME"
