@@ -42,4 +42,15 @@ jobs:
           run: |
             echo "PR Branch Name is $PR_BRANCH_NAME"
             echo "Commit msg: ${{ github.event.head_commit.message }}"
+            echo "base_ref: ${{ github.base_ref }}"
+            echo "event_name: ${{ github.event_name }}"
+            echo "head_ref: ${{ github.head_ref }}"
+            echo "ref: ${{ github.ref }}"
+            echo "ref_name: ${{ github.ref_name }}"
+            echo "sha: ${{ github.sha }}"
+
+
+
+
+
               
