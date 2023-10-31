@@ -25,7 +25,9 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y jq
             echo "branch=$(gh pr list -s merged -L 1 --json headRefName | jq '.[0].headRefName')" | sed 's/"//g' >> "$GITHUB_OUTPUT"
+            echo "branch2=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT"
         
         - name: Display branch name
           run: |
             echo "target-branch: ${{ steps.branch-name.outputs.branch }}"
+            echo "target-branch2: ${{ steps.branch-name.outputs.branch2 }}"
