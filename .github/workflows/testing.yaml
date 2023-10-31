@@ -33,3 +33,10 @@ jobs:
             echo "target-branch: ${{ steps.branch-name.outputs.branch }}"
             echo "target-branch2: ${{ steps.branch-name.outputs.branch2 }}"
             echo "PR_BRANCH_NAME: ${{ steps.branch-name.outputs.PR_BRANCH_NAME }}"
+        
+        - name: Get PR Branch Name
+          id: pr_branch_name
+          run: echo "PR_BRANCH_NAME=${{ github.head_ref }}" >> $GITHUB_ENV
+    
+        - name: Print PR Branch Name
+          run: echo "PR Branch Name is $PR_BRANCH_NAME"
