@@ -1,0 +1,382 @@
+app_version: 1.50
+name: agent_perf_all_boost_packages
+description: Agent Performance Pipeline for Boost Packages
+schedule: 0 10 * * *
+tags:
+- agentnet
+- production
+- listing performance
+default_args:
+  owner: JohnSek
+  depends_on_past: false
+  start_date: '2022-12-19'
+  retries: 1
+  retry_delay: 5
+  catchup: false
+params:
+  slack_notify_user_id: U0293G701U7
+tasks:
+- name: sg_bq_to_es_listing_boost_packages
+  description: SG elastic listing for boost packages
+  compute_resource: medium
+  env_vars:
+  - name: SECRET_PASSWORD
+    value: production_dataengineering_es
+  - name: ENV
+    value: production
+  source:
+    project: propertyguru-datalake-v0
+    db: silver
+    table: sg_fact_credit
+    query: >
+          WITH packages AS (
+            SELECT
+              CONCAT(listing_id, '_', utilized_credits_info_id) AS id,
+              listing_id AS listingId,
+              CASE utilization_action
+                WHEN 'BOOST-V2' THEN 'boost'
+                WHEN 'PREMIUM' THEN 'spotlight'
+                ELSE lower(utilization_action) 
+                END
+                AS packageName,
+              DATE(product_start_time) AS startDate,
+              DATE(product_end_time) AS endDate
+            FROM `propertyguru-datalake-v0.silver.sg_fact_credit`
+            WHERE DATE(date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND utilization_action IN ('TURBO','BOOST','BOOST-V2','PREMIUM')
+            GROUP BY 1,2,3,4,5
+          ),
+          repost_packages AS (
+            SELECT
+              CONCAT(listing_id, '_', utilized_credits_info_id) AS id,
+              listing_id AS listingId,
+              'repost' AS packageName,
+              date AS startDate,
+              date AS endDate
+            FROM `propertyguru-datalake-v0.silver.sg_fact_credit`
+            WHERE DATE(date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND REGEXP_CONTAINS(utilization_action, 'REPOST')
+            GROUP BY 1,2,3,4,5
+          ),
+          featured_packages AS (
+            SELECT
+              CONCAT(listing_id, '_', id) AS id,
+              listing_id AS listingId,
+              'featuredListing' AS packageName,
+              DATE(start_date) AS startDate,
+              DATE(end_date) AS endDate
+            FROM `propertyguru-datalake-v0.propertydb_production_all.sg_featured_listing_ds`
+            WHERE _PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 8 DAY)
+              AND DATE(start_date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND status_code = 'ACT'
+            GROUP BY 1,2,3,4,5
+            ),
+          promoted_packages AS (
+            SELECT
+              CONCAT(external_id,'_',campaign_id,'_promotedlisting') AS id,
+              CAST(external_id AS INT64) AS listingId,
+              'promotedListing' AS packageName,
+              DATE(start_date) AS startDate,
+              DATE(end_date) AS endDate
+            FROM
+              `propertyguru-datalake-v0.monetization_products_sg_prod.campaigns_prod` A
+            LEFT JOIN (
+              SELECT
+                campaign_id,
+                external_id
+              FROM
+                propertyguru-datalake-v0.monetization_products_sg_prod.campaign_targets_prod) B
+            ON
+              A.id = B.campaign_id
+            WHERE
+             DATE(start_date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+            GROUP BY
+              1,
+              2,
+              3,
+              4,
+              5
+          )
+          SELECT * FROM packages
+          UNION ALL
+          SELECT * FROM repost_packages
+          UNION ALL
+          SELECT * FROM featured_packages
+          UNION ALL
+          SELECT * FROM promoted_packages;
+  destination:
+    type: elasticsearch
+    connection_config:
+      endpoint: https://production-dataengineering-elasticsearch.guruestate.com:443
+      username: dataengineering
+      password: SECRET_PASSWORD
+    db: ''
+    table: sg_listing_boost_packages_s1_back
+    kwargs:
+      write_disposition: WRITE_APPEND
+      datetime_columns:
+      - startDate
+      - endDate
+      id_column: id
+      pre_load:
+      - action_type: DELETE
+        action_payload:
+          query:
+            bool:
+              filter:
+              - range:
+                  endDate:
+                    lte: now-190d
+      post_load: []
+- name: my_bq_to_es_listing_boost_packages
+  description: MY elastic listing for boost packages
+  compute_resource: medium
+  env_vars:
+  - name: SECRET_PASSWORD
+    value: production_dataengineering_es
+  - name: ENV
+    value: production
+  source:
+    project: propertyguru-datalake-v0
+    db: silver
+    table: my_fact_credit
+    query: >
+          WITH packages AS (
+            SELECT
+              CONCAT(listing_id, '_', utilized_credits_info_id) AS id,
+              listing_id AS listingId,
+              CASE utilization_action
+                WHEN 'RANKED-SPOTLIGHT' THEN 'rankedSpotlight'
+                ELSE lower(utilization_action) 
+                END
+                AS packageName,
+              DATE(product_start_time) AS startDate,
+              DATE(product_end_time) AS endDate
+            FROM `propertyguru-datalake-v0.silver.my_fact_credit`
+            WHERE DATE(date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND utilization_action IN ('TURBO','RANKED-SPOTLIGHT')
+            GROUP BY 1,2,3,4,5
+          ),
+          repost_packages AS (
+            SELECT
+              CONCAT(listing_id, '_', utilized_credits_info_id) AS id,
+              listing_id AS listingId,
+              'repost' AS packageName,
+              date AS startDate,
+              date AS endDate
+            FROM `propertyguru-datalake-v0.silver.my_fact_credit`
+            WHERE DATE(date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND REGEXP_CONTAINS(utilization_action, 'REPOST')
+            GROUP BY 1,2,3,4,5
+          ),
+          featured_packages AS (
+            SELECT
+              CONCAT(listing_id, '_', id) AS id,
+              listing_id AS listingId,
+              'featuredListing' AS packageName,
+              DATE(start_date) AS startDate,
+              DATE(end_date) AS endDate
+            FROM `propertyguru-datalake-v0.propertydb_production_all.my_featured_listing_ds`
+            WHERE _PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 8 DAY)
+              AND DATE(start_date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND status_code = 'ACT'
+            GROUP BY 1,2,3,4,5
+          )
+          SELECT * FROM packages
+          UNION ALL
+          SELECT * FROM repost_packages
+          UNION ALL
+          SELECT * FROM featured_packages;
+  destination:
+    type: elasticsearch
+    connection_config:
+      endpoint: https://production-dataengineering-elasticsearch.guruestate.com:443
+      username: dataengineering
+      password: SECRET_PASSWORD
+    db: ''
+    table: my_listing_boost_packages_s1_back
+    kwargs:
+      write_disposition: WRITE_APPEND
+      datetime_columns:
+      - startDate
+      - endDate
+      id_column: id
+      pre_load:
+      - action_type: DELETE
+        action_payload:
+          query:
+            bool:
+              filter:
+              - range:
+                  endDate:
+                    lte: now-190d
+      post_load: []
+- name: th_bq_to_es_listing_boost_packages
+  description: TH elastic listing for boost packages
+  compute_resource: medium
+  env_vars:
+  - name: SECRET_PASSWORD
+    value: production_dataengineering_es
+  - name: ENV
+    value: production
+  source:
+    project: propertyguru-datalake-v0
+    db: silver
+    table: th_fact_credit
+    query: >
+          WITH packages AS (
+            SELECT
+              CONCAT(listing_id, '_', utilized_credits_info_id) AS id,
+              listing_id AS listingId,
+              CASE utilization_action
+                WHEN 'BOOST-V2' THEN 'boost'
+                WHEN 'PREMIUM' THEN 'spotlight'
+                WHEN 'RANKED-SPOTLIGHT' THEN 'rankedSpotlight'
+                ELSE lower(utilization_action) 
+                END
+                AS packageName,
+              DATE(product_start_time) AS startDate,
+              DATE(product_end_time) AS endDate
+            FROM `propertyguru-datalake-v0.silver.th_fact_credit`
+            WHERE DATE(date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND utilization_action IN ('TURBO','BOOST','BOOST-V2','PREMIUM','RANKED-SPOTLIGHT')
+            GROUP BY 1,2,3,4,5
+          ),
+          repost_packages AS (
+            SELECT
+              CONCAT(listing_id, '_', utilized_credits_info_id) AS id,
+              listing_id AS listingId,
+              'repost' AS packageName,
+              date AS startDate,
+              date AS endDate
+            FROM `propertyguru-datalake-v0.silver.th_fact_credit`
+            WHERE DATE(date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND REGEXP_CONTAINS(utilization_action, 'REPOST')
+            GROUP BY 1,2,3,4,5
+          ),
+          featured_packages AS (
+            SELECT
+              CONCAT(listing_id, '_', id) AS id,
+              listing_id AS listingId,
+              'featuredListing' AS packageName,
+              DATE(start_date) AS startDate,
+              DATE(end_date) AS endDate
+            FROM `propertyguru-datalake-v0.propertydb_production_all.th_featured_listing_ds`
+            WHERE _PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 8 DAY)
+              AND DATE(start_date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND status_code = 'ACT'
+              GROUP BY 1,2,3,4,5
+          )
+          SELECT * FROM packages
+          UNION ALL
+          SELECT * FROM repost_packages
+          UNION ALL
+          SELECT * FROM featured_packages;
+  destination:
+    type: elasticsearch
+    connection_config:
+      endpoint: https://production-dataengineering-elasticsearch.guruestate.com:443
+      username: dataengineering
+      password: SECRET_PASSWORD
+    db: ''
+    table: th_listing_boost_packages_s1_back
+    kwargs:
+      write_disposition: WRITE_APPEND
+      datetime_columns:
+      - startDate
+      - endDate
+      id_column: id
+      pre_load:
+      - action_type: DELETE
+        action_payload:
+          query:
+            bool:
+              filter:
+              - range:
+                  endDate:
+                    lte: now-190d
+      post_load: []
+- name: id_bq_to_es_listing_boost_packages
+  description: ID elastic listing for boost packages
+  compute_resource: medium
+  env_vars:
+  - name: SECRET_PASSWORD
+    value: production_dataengineering_es
+  - name: ENV
+    value: production
+  source:
+    project: propertyguru-datalake-v0
+    db: silver
+    table: id_fact_credit
+    query: >
+          WITH packages AS (
+            SELECT
+              CONCAT(listing_id, '_', utilized_credits_info_id) AS id,
+              listing_id AS listingId,
+              CASE utilization_action
+                WHEN 'RANKED-SPOTLIGHT' THEN 'rankedSpotlight'
+                ELSE lower(utilization_action) 
+                END
+                AS packageName,
+              DATE(product_start_time) AS startDate,
+              DATE(product_end_time) AS endDate
+            FROM `propertyguru-datalake-v0.silver.id_fact_credit`
+            WHERE DATE(date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND utilization_action IN ('TURBO','RANKED-SPOTLIGHT')
+            GROUP BY 1,2,3,4,5
+          ),
+          repost_packages AS (
+            SELECT
+              CONCAT(listing_id, '_', utilized_credits_info_id) AS id,
+              listing_id AS listingId,
+              'repost' AS packageName,
+              date AS startDate,
+              date AS endDate
+            FROM `propertyguru-datalake-v0.silver.id_fact_credit`
+            WHERE DATE(date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND REGEXP_CONTAINS(utilization_action, 'REPOST')
+            GROUP BY 1,2,3,4,5
+          ),
+          featured_packages AS (
+            SELECT
+              CONCAT(listing_id, '_', id) AS id,
+              listing_id AS listingId,
+              'featuredListing' AS packageName,
+              DATE(start_date) AS startDate,
+              DATE(end_date) AS endDate
+            FROM `propertyguru-datalake-v0.propertydb_production_all.id_featured_listing_ds`
+            WHERE _PARTITIONDATE >= DATE_SUB(CURRENT_DATE(), INTERVAL 8 DAY)
+              AND DATE(start_date) BETWEEN DATE(DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) AND CURRENT_DATE()
+              AND status_code = 'ACT'
+              GROUP BY 1,2,3,4,5
+          )
+          SELECT * FROM packages
+          UNION ALL
+          SELECT * FROM repost_packages
+          UNION ALL
+          SELECT * FROM featured_packages;
+  destination:
+    type: elasticsearch
+    connection_config:
+      endpoint: https://production-dataengineering-elasticsearch.guruestate.com:443
+      username: dataengineering
+      password: SECRET_PASSWORD
+    db: ''
+    table: id_listing_boost_packages_s1_back
+    kwargs:
+      write_disposition: WRITE_APPEND
+      datetime_columns:
+      - startDate
+      - endDate
+      id_column: id
+      pre_load:
+      - action_type: DELETE
+        action_payload:
+          query:
+            bool:
+              filter:
+              - range:
+                  endDate:
+                    lte: now-190d
+      post_load: []
+tasks_dependency: sg_bq_to_es_listing_boost_packages >> my_bq_to_es_listing_boost_packages >> th_bq_to_es_listing_boost_packages >> id_bq_to_es_listing_boost_packages

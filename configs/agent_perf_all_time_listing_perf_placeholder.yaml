@@ -1,0 +1,204 @@
+app_version: 1.4
+name: agent_perf_all_time_listing_perf_placeholder
+description: Agent Perf all time listing performance v2 config placeholder (config will be used in other DAGs & this DAG will be turn off in airflow until a disable feature is supported thorugh yaml config)
+schedule: 0 10 * * *
+tags:
+- agentnet
+- production
+- listing performance
+default_args:
+  owner: JohnSek
+  depends_on_past: false
+  start_date: '2023-04-05'
+  retries: 1
+  retry_delay: 5
+  catchup: false
+params:
+  slack_notify_user_id: U0293G701U7
+tasks:
+- name: sg_bq_to_es_listing_performance_all_time
+  description: SG elastic all time listing performance
+  compute_resource: medium
+  env_vars:
+  - name: SECRET_PASSWORD
+    value: production_dataengineering_es
+  - name: ENV
+    value: production
+  source:
+    project: propertyguru-datalake-v0
+    db: datamart_v0
+    table: sg_listing_performance
+    query: >
+            select
+              perf.listing_id as listingId,
+              impression,
+              total_view as totalView,
+              total_ViewPhone_lead as totalPhoneLead,
+              total_Email_lead as totalEmailLead,
+              total_Call_lead as totalCallLead,
+              total_SMS_lead as totalSMSLead,
+              total_Whatsapp_lead as totalWhatsappLead,
+              view_better_than_the_rest as viewBetterThanTheRest,
+              view_worst_than_the_rest as viewWorstThanTheRest,
+              lead_better_than_the_rest as leadBetterThanTheRest,
+              lead_worst_than_the_rest as leadWorstThanTheRest,
+              hdb_estate_code as hdbEstateCode,
+              hdb_estate_name as hdbEstateName,
+              is_HDB as isHdb
+            from
+              `propertyguru-datalake-v0.datamart_v0.sg_listing_performance` perf
+  destination:
+    type: elasticsearch
+    connection_config:
+      endpoint: https://production-dataengineering-elasticsearch.guruestate.com:443
+      username: dataengineering
+      password: SECRET_PASSWORD
+    db: ''
+    table: sg_listing_performance_all_time
+    kwargs:
+      write_disposition: WRITE_TRUNCATE
+      datetime_columns: []
+      thread_count: 2
+      id_column: listingId
+      pre_load: []
+      post_load: []
+- name: my_bq_to_es_listing_performance_all_time
+  description: MY elastic all time listing performance
+  compute_resource: medium
+  env_vars:
+  - name: SECRET_PASSWORD
+    value: production_dataengineering_es
+  - name: ENV
+    value: production
+  source:
+    project: propertyguru-datalake-v0
+    db: datamart_v0
+    table: my_listing_performance
+    query: >
+            select
+              perf.listing_id as listingId,
+              impression,
+              total_view as totalView,
+              total_ViewPhone_lead as totalPhoneLead,
+              total_Email_lead as totalEmailLead,
+              total_Call_lead as totalCallLead,
+              total_SMS_lead as totalSMSLead,
+              total_Whatsapp_lead as totalWhatsappLead,
+              view_better_than_the_rest as viewBetterThanTheRest,
+              view_worst_than_the_rest as viewWorstThanTheRest,
+              lead_better_than_the_rest as leadBetterThanTheRest,
+              lead_worst_than_the_rest as leadWorstThanTheRest,
+              hdb_estate_code as hdbEstateCode,
+              hdb_estate_name as hdbEstateName,
+              is_HDB as isHdb
+            from
+              `propertyguru-datalake-v0.datamart_v0.my_listing_performance` perf
+  destination:
+    type: elasticsearch
+    connection_config:
+      endpoint: https://production-dataengineering-elasticsearch.guruestate.com:443
+      username: dataengineering
+      password: SECRET_PASSWORD
+    db: ''
+    table: my_listing_performance_all_time
+    kwargs:
+      write_disposition: WRITE_TRUNCATE
+      datetime_columns: []
+      thread_count: 2
+      id_column: listingId
+      pre_load: []
+      post_load: []
+- name: th_bq_to_es_listing_performance_all_time
+  description: TH elastic all time listing performance
+  compute_resource: medium
+  env_vars:
+  - name: SECRET_PASSWORD
+    value: production_dataengineering_es
+  - name: ENV
+    value: production
+  source:
+    project: propertyguru-datalake-v0
+    db: datamart_v0
+    table: th_listing_performance
+    query: >
+            select
+              perf.listing_id as listingId,
+              impression,
+              total_view as totalView,
+              total_ViewPhone_lead as totalPhoneLead,
+              total_Email_lead as totalEmailLead,
+              total_Call_lead as totalCallLead,
+              total_SMS_lead as totalSMSLead,
+              total_Whatsapp_lead as totalWhatsappLead,
+              total_Line_lead as totalLineLead,
+              view_better_than_the_rest as viewBetterThanTheRest,
+              view_worst_than_the_rest as viewWorstThanTheRest,
+              lead_better_than_the_rest as leadBetterThanTheRest,
+              lead_worst_than_the_rest as leadWorstThanTheRest,
+              hdb_estate_code as hdbEstateCode,
+              hdb_estate_name as hdbEstateName,
+              is_HDB as isHdb
+            from
+              `propertyguru-datalake-v0.datamart_v0.th_listing_performance` perf
+  destination:
+    type: elasticsearch
+    connection_config:
+      endpoint: https://production-dataengineering-elasticsearch.guruestate.com:443
+      username: dataengineering
+      password: SECRET_PASSWORD
+    db: ''
+    table: th_listing_performance_all_time
+    kwargs:
+      write_disposition: WRITE_TRUNCATE
+      datetime_columns: []
+      id_column: listingId
+      thread_count: 2
+      pre_load: []
+      post_load: []
+- name: id_bq_to_es_listing_performance_all_time
+  description: ID elastic all time listing performance
+  compute_resource: medium
+  env_vars:
+  - name: SECRET_PASSWORD
+    value: production_dataengineering_es
+  - name: ENV
+    value: production
+  source:
+    project: propertyguru-datalake-v0
+    db: datamart_v0
+    table: id_listing_performance
+    query: >
+            select
+              perf.listing_id as listingId,
+              impression,
+              total_view as totalView,
+              total_ViewPhone_lead as totalPhoneLead,
+              total_Email_lead as totalEmailLead,
+              total_Call_lead as totalCallLead,
+              total_SMS_lead as totalSMSLead,
+              total_Whatsapp_lead as totalWhatsappLead,
+              view_better_than_the_rest as viewBetterThanTheRest,
+              view_worst_than_the_rest as viewWorstThanTheRest,
+              lead_better_than_the_rest as leadBetterThanTheRest,
+              lead_worst_than_the_rest as leadWorstThanTheRest,
+              hdb_estate_code as hdbEstateCode,
+              hdb_estate_name as hdbEstateName,
+              is_HDB as isHdb
+            from
+              `propertyguru-datalake-v0.datamart_v0.id_listing_performance` perf
+  destination:
+    type: elasticsearch
+    connection_config:
+      endpoint: https://production-dataengineering-elasticsearch.guruestate.com:443
+      username: dataengineering
+      password: SECRET_PASSWORD
+    db: ''
+    table: id_listing_performance_all_time
+    kwargs:
+      write_disposition: WRITE_TRUNCATE
+      datetime_columns: []
+      thread_count: 2
+      id_column: listingId
+      pre_load: []
+      post_load: []
+tasks_dependency: sg_bq_to_es_listing_performance_all_time >> my_bq_to_es_listing_performance_all_time >> th_bq_to_es_listing_performance_all_time >> id_bq_to_es_listing_performance_all_time
