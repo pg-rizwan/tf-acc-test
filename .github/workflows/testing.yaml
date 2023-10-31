@@ -49,6 +49,18 @@ jobs:
             echo "ref_name: ${{ github.ref_name }}"
             echo "sha: ${{ github.sha }}"
             echo "event number is: ${{ github.event_path.number }}"
+        
+        - name: Test gh-find-current-pr@v1
+          uses: jwalton/gh-find-current-pr@v1
+          id: findPr
+          with:
+          # Can be "open", "closed", or "all".  Defaults to "open".
+           state: closed
+        
+        - run: echo "Your PR is ${PR}"
+        if: success() && steps.findPr.outputs.number
+        env:
+            PR: ${{ steps.findPr.outputs.pr }}
 
 
 
