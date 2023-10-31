@@ -26,16 +26,10 @@ jobs:
             sudo apt-get install -y jq
             echo "branch=$(gh pr list -s merged -L 1 --json headRefName | jq '.[0].headRefName')" | sed 's/"//g' >> "$GITHUB_OUTPUT"
             echo "branch2=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_OUTPUT"
-            echo "PR_BRANCH_NAME=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+            echo "PR_BRANCH_NAME=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
         
         - name: Display branch name
           run: |
             echo "target-branch: ${{ steps.branch-name.outputs.branch }}"
             echo "target-branch2: ${{ steps.branch-name.outputs.branch2 }}"
             echo "PR_BRANCH_NAME: ${{ steps.branch-name.outputs.PR_BRANCH_NAME }}"
-
-        - name: Git branch name
-          id: git-branch-name
-          uses: EthanSK/git-branch-name-action@v1
-        - name: Echo the branch name
-          run: echo "Branch name ${GIT_BRANCH_NAME}"
