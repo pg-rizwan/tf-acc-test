@@ -24,7 +24,7 @@ jobs:
           run: |
             sudo apt-get update
             sudo apt-get install -y jq
-            echo "branch=$(gh pr view ${{ github.event.number }} --json headRefName | jq '.[0].headRefName')" | sed 's/"//g' >> "$GITHUB_OUTPUT"
+            echo "branch=$(gh pr view ${{ github.event_path.number }} --json headRefName | jq '.[0].headRefName')" | sed 's/"//g' >> "$GITHUB_OUTPUT"
             echo "branch2=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_OUTPUT"
             echo "PR_BRANCH_NAME=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
         
@@ -48,7 +48,7 @@ jobs:
             echo "ref: ${{ github.ref }}"
             echo "ref_name: ${{ github.ref_name }}"
             echo "sha: ${{ github.sha }}"
-            echo "event number: ${{ github.event.number }}"
+            echo "event number is: ${{ github.event_path.number }}"
 
 
 
