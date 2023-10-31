@@ -10,6 +10,14 @@ jobs:
         runs-on: ubuntu-latest 
 
         steps:
+        - name: Checkout
+          uses: actions/checkout@v3
+        
+        - name: setup python
+          uses: actions/setup-python@v4
+          with:
+            python-version: '3.10'
+
         - name: Get branch name (head) of the last merged PR
           id: branch-name
           if: github.event_name != 'pull_request' # do not push DAG on pull request
