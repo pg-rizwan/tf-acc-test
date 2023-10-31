@@ -48,6 +48,7 @@ jobs:
             echo "ref: ${{ github.ref }}"
             echo "ref_name: ${{ github.ref_name }}"
             echo "sha: ${{ github.sha }}"
+            echo "event: ${{ github.event }}"
 
 
 
