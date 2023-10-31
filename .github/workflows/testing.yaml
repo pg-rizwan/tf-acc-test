@@ -50,16 +50,16 @@ jobs:
             echo "sha: ${{ github.sha }}"
             echo "event number is: ${{ github.event_path.number }}"
         
-        - name: Test gh-find-current-pr@v1
-          uses: jwalton/gh-find-current-pr@v1
+        # Find the PR associated with this push, if there is one.
+        - uses: jwalton/gh-find-current-pr@v1
           id: findPr
           with:
-          # Can be "open", "closed", or "all".  Defaults to "open".
-           state: closed
-        
+                # Can be "open", "closed", or "all".  Defaults to "open".
+            state: open
+            # This will echo "Your PR is 7", or be skipped if there is no current PR.
         - run: echo "Your PR is ${PR}"
-        if: success() && steps.findPr.outputs.number
-        env:
+          if: success() && steps.findPr.outputs.number
+          env:
             PR: ${{ steps.findPr.outputs.pr }}
 
 
