@@ -25,4 +25,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y jq
             echo "branch=$(gh pr list -s merged -L 1 --json headRefName | jq '.[0].headRefName')" | sed 's/"//g' >> "$GITHUB_OUTPUT"
-            echo "The branch is: $GITHUB_OUTPUT"
+        
+        - name: Display branch name
+          run: |
+            echo "target-branch: ${{ steps.branch-name.outputs.branch }}"
