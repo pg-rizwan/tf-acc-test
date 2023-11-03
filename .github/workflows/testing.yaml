@@ -1,13 +1,14 @@
 on:
     push:
       branches: [ main ]
+    pull_request:
 
 env:
     GH_TOKEN: ${{ github.token }}
         
 jobs:
     dag-generator:
-        runs-on: [self-hosted, linux, x64, large]
+        runs-on: [self-hosted, linux, x64, small]
 
         steps:
         - name: Checkout
