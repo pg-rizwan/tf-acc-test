@@ -34,7 +34,6 @@ jobs:
             echo "branch=$(gh pr view ${{ steps.findPr.outputs.pr }} --json headRefName | jq '.headRefName')" | sed 's/"//g' >> "$GITHUB_OUTPUT"
             echo "branch2=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_OUTPUT"
             echo "PR_BRANCH_NAME=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-            echo "branch=$branch" >> $GITHUB_ENV
 
         - name: Display branch name
           run: |
